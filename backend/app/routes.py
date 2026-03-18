@@ -18,12 +18,22 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
 
     # IF DOCTOR NOT FOUND, CREATE NEW
     if not hcp:
-        hcp = models.HCP(name=data.doctor_name, hospital=data.hospital)
+        hcp = models.HCP(
+            name=data.doctor_name,
+            hospital=data.hospital,
+            specialization=data.specialization,
+            city=data.city
+        )
         db.add(hcp)
-        db.commit()
-        db.refresh(hcp)
-
+        db.flush()
+        
         hcp_created = True
+    else:
+        if data.specialization and not hcp.specialization:
+            hcp.specialization = data.specialization
+
+        if data.city and not hcp.city:
+            hcp.city = data.city
 
     # LOG INTERACTION
     interaction = models.Interaction(
@@ -37,6 +47,8 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
 
     db.add(interaction)
     db.commit()
+
+    db.refresh(hcp)
     db.refresh(interaction)
 
     return {
