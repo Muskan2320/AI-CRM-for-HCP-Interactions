@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from datetime import date
 
 from .database import get_db
 from . import models, schemas
@@ -57,3 +58,28 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
         "hcp_id": hcp.id,
         "hcp_created": hcp_created
     }
+
+@router.get("/pending-follow-ups")
+def get_pending_followups(db: Session = Depends(get_db)):
+    today = date.today()
+
+    followups = db.query(models.Interaction).filter(
+        models.Interaction.follow_up_status == "pending",
+        models.Interaction.follow_up_date != None,
+        models.Interaction.follow_up_date <= today
+    ).all()
+
+    result = []
+
+    for f in followups:
+        result.append({
+            "interaction_id": f.id,
+            "hcp_id": f.hcp_id,
+            "doctor_name": f.hcp.name,
+            "hospital": f.hcp.hospital,
+            "follow_up_action": f.follow_up_action,
+            "follow_up_date": f.follow_up_date,
+            "topic": f.topic
+        })
+
+    return result
