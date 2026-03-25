@@ -83,3 +83,52 @@ def get_pending_followups(db: Session = Depends(get_db)):
         })
 
     return result
+
+@router.get("/hcp/{hcp_id}/interactions")
+def get_hcp_interactions(hcp_id: int, db: Session = Depends(get_db)):
+    interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
+
+    result = []
+    for i in interactions:
+        result.append({
+            "interaction_id": i.id,
+            "interaction_date": i.Interaction_date,
+            "topic": i.topic,
+            "follow_up_action": i.follow_up_action,
+            "follow_up_date": i.follow_up_date,
+            "follow_up_status": i.follow_up_status,
+            "notes": i.notes
+        })
+
+    return result
+
+@router.get("/hcp/search")
+def search_hcp(name: str = None, hospital: str = None, limit: int = 10, db: Session = Depends(get_db)):
+    query = db.query(models.HCP)
+
+    if not name and not hospital:
+        results = query.order_by(models.HCP.created_at.desc()).limit(limit=limit).all()
+
+    else:
+        if name and hospital:
+            query = query.filter(
+                models.HCP.name.ilike(f"%{name}%"),
+                models.HCP.hospital.ilike(f"%{hospital}%")
+            )
+        elif name:
+            query = query.filter(models.HCP.name.ilike(f"%{name}%"))
+        elif hospital:
+            query = query.filter(models.HCP.hospital.ilike(f"%{hospital}%"))
+
+        results = query.all()
+
+    return [
+        {
+            "hcp_id": hcp.id,
+            "name": hcp.name,
+            "hospital": hcp.hospital,
+            "specialization": hcp.specialization,
+            "city": hcp.city
+        }
+        for hcp in results
+    ]
