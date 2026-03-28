@@ -84,6 +84,46 @@ def get_pending_followups(db: Session = Depends(get_db)):
 
     return result
 
+@router.put("/interaction/{interaction_id}")
+def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db: Session = Depends(get_db)):
+    interaction = db.query(models.Interaction).filter(
+        models.Interaction.id == interaction_id
+    ).first()
+
+    if not interaction:
+        return {"error": "Interaction not found"}
+    
+    updated_fields = []
+
+    if data.topic:
+        interaction.topic = data.topic
+        updated_fields.append("topic")
+
+    if data.follow_up_action:
+        interaction.follow_up_action = data.follow_up_action
+        updated_fields.append("follow_up_action")
+
+    if data.follow_up_date:
+        interaction.follow_up_date = data.follow_up_date
+        updated_fields.append("follow_up_date")
+
+    if data.follow_up_status:
+        interaction.follow_up_status = data.follow_up_status
+        updated_fields.append("follow_up_status")
+
+    if data.notes:
+        interaction.notes = data.notes
+        updated_fields.append("notes")
+
+    db.commit()
+    db.refresh(interaction)
+
+    return {
+        "message": "Interaction updated successfully",
+        "interaction_id": interaction.id,
+        "updated_fields": updated_fields
+    }
+
 @router.get("/hcp/{hcp_id}/interactions")
 def get_hcp_interactions(hcp_id: int, db: Session = Depends(get_db)):
     interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
