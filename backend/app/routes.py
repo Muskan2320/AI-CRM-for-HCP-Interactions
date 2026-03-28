@@ -143,10 +143,18 @@ def get_hcp_interactions(hcp_id: int, db: Session = Depends(get_db)):
     return result
 
 @router.get("/hcp/search")
-def search_hcp(name: str = None, hospital: str = None, limit: int = 10, db: Session = Depends(get_db)):
+def search_hcp(hcp_id: int = None,name: str = None, hospital: str = None, limit: int = 10, db: Session = Depends(get_db)):
     query = db.query(models.HCP)
 
-    if not name and not hospital:
+    if hcp_id:
+        hcp = query.filter(models.HCP.id == hcp_id).first()
+
+        if not hcp:
+            return {"error": "HCP not found"}
+        
+        results = [hcp]
+        
+    elif not name and not hospital:
         results = query.order_by(models.HCP.created_at.desc()).limit(limit=limit).all()
 
     else:
