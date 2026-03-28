@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import date
-from typing import Optional
+from typing import Optional, Literal
 
 class InteractionCreate(BaseModel):
     doctor_name: str
@@ -14,4 +14,15 @@ class InteractionCreate(BaseModel):
     
     follow_up_action: Optional[str] = None
     follow_up_date: Optional[date] = None
+
+    follow_up_status: Literal["pending", "completed", "cancelled", "no_follow_up"] = None
+    notes: Optional[str] = None
+
+class InteractionUpdate(BaseModel):
+    topic: Optional[str] = None
+    follow_up_action: Optional[str] = None
+    
+    follow_up_date: Optional[date] = None
+    follow_up_status: Optional[Literal["pending", "completed", "cancelled", "no_follow_up"]] = None
+    
     notes: Optional[str] = None
