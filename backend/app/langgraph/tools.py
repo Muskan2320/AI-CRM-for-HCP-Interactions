@@ -2,14 +2,18 @@ import requests
 
 BASE_URL = "http://127.0.0.1:8000"
 
-def search_hcp_tool(name: str = None, hospital: str = None):
+def search_hcp_tool(hcp_id: int = None, name: str = None, hospital: str = None):
     params = {}
 
-    if name:
-        params["name"] = name
+    # Priority to search by ID if provided, else use name and hospital for search.
+    if hcp_id:
+        params["hcp_id"] = hcp_id
+    else:
+        if name:
+            params["name"] = name
 
-    if hospital:
-        params["hospital"] = hospital
+        if hospital:
+            params["hospital"] = hospital
 
     response = requests.get(f"{BASE_URL}/hcp/search", params=params)
 
@@ -29,7 +33,7 @@ def edit_interaction_tool(interaction_id: int, data: dict):
     return response.json()
 
 if __name__ == "__main__":
-    # result = search_hcp_tool(name="Sharma")
+    # result = search_hcp_tool(hcp_id=2)
     # print(result)
 
     # sample_data = {
