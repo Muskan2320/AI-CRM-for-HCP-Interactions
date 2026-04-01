@@ -32,6 +32,11 @@ def edit_interaction_tool(interaction_id: int, data: dict):
 
     return response.json()
 
+def get_hcp_interactions_tool(hcp_id: int):
+    response = requests.get(f"{BASE_URL}/hcp/{hcp_id}/interactions")
+
+    return response.json()
+
 if __name__ == "__main__":
     # result = search_hcp_tool(hcp_id=2)
     # print(result)
@@ -51,11 +56,14 @@ if __name__ == "__main__":
     # result = log_interaction_tool(sample_data)
     # print(result)
 
-    result = edit_interaction_tool(
-        interaction_id=7,
-        data={
-            "follow_up_status": "completed",
-            "notes": "Follow-up done successfully"
-        }
-    )
+    # result = edit_interaction_tool(
+    #     interaction_id=7,
+    #     data={
+    #         "follow_up_status": "completed",
+    #         "notes": "Follow-up done successfully"
+    #     }
+    # )
+    # print(result)
+
+    result = get_hcp_interactions_tool(1)
     print(result)

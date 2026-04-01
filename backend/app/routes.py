@@ -128,6 +128,9 @@ def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db:
 def get_hcp_interactions(hcp_id: int, db: Session = Depends(get_db)):
     interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
 
+    if not interactions:
+        return {"EMPTY": "No interactions found for this HCP"}
+    
     result = []
     for i in interactions:
         result.append({
