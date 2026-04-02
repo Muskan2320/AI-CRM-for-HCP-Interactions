@@ -32,8 +32,8 @@ def edit_interaction_tool(interaction_id: int, data: dict):
 
     return response.json()
 
-def get_hcp_interactions_tool(hcp_id: int):
-    response = requests.get(f"{BASE_URL}/hcp/{hcp_id}/interactions")
+def get_hcp_interaction_history_tool(hcp_id: int):
+    response = requests.get(f"{BASE_URL}/hcp/{hcp_id}/interaction-history")
 
     return response.json()
 

@@ -124,8 +124,8 @@ def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db:
         "updated_fields": updated_fields
     }
 
-@router.get("/hcp/{hcp_id}/interactions")
-def get_hcp_interactions(hcp_id: int, db: Session = Depends(get_db)):
+@router.get("/hcp/{hcp_id}/interaction-history")
+def get_hcp_interaction_history(hcp_id: int, db: Session = Depends(get_db)):
     interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
 
     if not interactions:
