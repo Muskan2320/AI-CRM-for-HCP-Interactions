@@ -65,5 +65,5 @@ if __name__ == "__main__":
     # )
     # print(result)
 
-    result = get_hcp_interactions_tool(1)
+    result = get_hcp_interaction_history_tool(1)
     print(result)
