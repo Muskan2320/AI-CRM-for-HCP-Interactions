@@ -32,6 +32,16 @@ def edit_interaction_tool(interaction_id: int, data: dict):
 
     return response.json()
 
+def get_pending_followups_tool(target_date=None):
+
+    params = {}
+    if target_date:
+        params["target_date"] = target_date
+        
+    response = requests.get(f"{BASE_URL}/pending-follow-ups", params=params)
+
+    return response.json()
+
 def get_hcp_interaction_history_tool(hcp_id: int):
     response = requests.get(f"{BASE_URL}/hcp/{hcp_id}/interaction-history")
 
@@ -65,5 +75,7 @@ if __name__ == "__main__":
     # )
     # print(result)
 
-    result = get_hcp_interaction_history_tool(1)
-    print(result)
+    # result = get_hcp_interaction_history_tool(1)
+    # print(result)
+
+    print(get_pending_followups_tool())
