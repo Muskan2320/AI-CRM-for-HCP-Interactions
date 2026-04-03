@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from datetime import date
 
@@ -59,31 +59,6 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
         "hcp_created": hcp_created
     }
 
-@router.get("/pending-follow-ups")
-def get_pending_followups(db: Session = Depends(get_db)):
-    today = date.today()
-
-    followups = db.query(models.Interaction).filter(
-        models.Interaction.follow_up_status == "pending",
-        models.Interaction.follow_up_date != None,
-        models.Interaction.follow_up_date <= today
-    ).all()
-
-    result = []
-
-    for f in followups:
-        result.append({
-            "interaction_id": f.id,
-            "hcp_id": f.hcp_id,
-            "doctor_name": f.hcp.name,
-            "hospital": f.hcp.hospital,
-            "follow_up_action": f.follow_up_action,
-            "follow_up_date": f.follow_up_date,
-            "topic": f.topic
-        })
-
-    return result
-
 @router.put("/interaction/{interaction_id}")
 def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db: Session = Depends(get_db)):
     interaction = db.query(models.Interaction).filter(
@@ -123,6 +98,34 @@ def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db:
         "interaction_id": interaction.id,
         "updated_fields": updated_fields
     }
+
+@router.get("/pending-follow-ups")
+def get_pending_followups(target_date: date = Query(None), db: Session = Depends(get_db)):
+    today = date.today()
+
+    query = db.query(models.Interaction).filter(
+        models.Interaction.follow_up_status == "pending",
+        models.Interaction.follow_up_date != None
+    ).all()
+
+    if target_date:
+        query = query.filter(models.Interaction.follow_up_date <= target_date)
+
+    followups = query.order_by(models.Interaction.follow_up_date.asc()).all()
+    result = []
+
+    for f in followups:
+        result.append({
+            "interaction_id": f.id,
+            "hcp_id": f.hcp_id,
+            "doctor_name": f.hcp.name,
+            "hospital": f.hcp.hospital,
+            "follow_up_action": f.follow_up_action,
+            "follow_up_date": f.follow_up_date,
+            "topic": f.topic
+        })
+
+    return result
 
 @router.get("/hcp/{hcp_id}/interaction-history")
 def get_hcp_interaction_history(hcp_id: int, db: Session = Depends(get_db)):
