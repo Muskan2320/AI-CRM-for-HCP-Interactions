@@ -187,24 +187,24 @@ def execute_plan(state):
                 field = value.split(".")[-1]
                 data[key] = prev_result.get(field)
 
-            tool = TOOL_MAP.get(tool_name)
+        tool = TOOL_MAP.get(tool_name)
 
-            if not tool:
-                return {"error": f"UNKNOWN_TOOL_{tool_name}"}
-            
-            if tool_name == "edit_interaction":
-                result = tool(data["interaction_id"], data)
-            elif tool_name == "get_hcp_interaction_history":
-                result = tool(data["hcp_id"])
-            else:
-                result = tool(**data) if isinstance(data, dict) else tool(data)
+        if not tool:
+            return {"error": f"UNKNOWN_TOOL_{tool_name}"}
+        
+        if tool_name == "edit_interaction":
+            result = tool(data["interaction_id"], data)
+        elif tool_name == "get_hcp_interaction_history":
+            result = tool(data["hcp_id"])
+        else:
+            result = tool(**data) if isinstance(data, dict) else tool(data)
 
-            if isinstance(result, list) and len(result) > 0:
-                prev_result = result[0]
-            elif isinstance(result, dict):
-                prev_result = result
-            else:
-                prev_result = {}
+        if isinstance(result, list) and len(result) > 0:
+            prev_result = result[0]
+        elif isinstance(result, dict):
+            prev_result = result
+        else:
+            prev_result = {}
 
     return {"result": result}
         
