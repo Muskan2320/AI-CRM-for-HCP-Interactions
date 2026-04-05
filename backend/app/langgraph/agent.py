@@ -164,3 +164,47 @@ User input:
             "raw_output": content,
             "input": user_input
         }
+    
+def execute_plan(state):
+    steps = state["plan"]
+    prev_result = {}
+
+
+    TOOL_MAP = {
+        "search_hcp": search_hcp_tool,
+        "log_interaction": log_interaction_tool,
+        "edit_interaction": edit_interaction_tool,
+        "get_pending_followups": get_pending_followups_tool,
+        "get_hcp_interaction_history": get_hcp_interaction_history_tool
+    }
+
+    for step in steps:
+        tool_name = step["tool"]
+        data = step.get("data", {})
+
+        for key, value in data.items():
+            if isinstance(value, str) and value.startswith("$prev"):
+                field = value.split(".")[-1]
+                data[key] = prev_result.get(field)
+
+            tool = TOOL_MAP.get(tool_name)
+
+            if not tool:
+                return {"error": f"UNKNOWN_TOOL_{tool_name}"}
+            
+            if tool_name == "edit_interaction":
+                result = tool(data["interaction_id"], data)
+            elif tool_name == "get_hcp_interaction_history":
+                result = tool(data["hcp_id"])
+            else:
+                result = tool(**data) if isinstance(data, dict) else tool(data)
+
+            if isinstance(result, list) and len(result) > 0:
+                prev_result = result[0]
+            elif isinstance(result, dict):
+                prev_result = result
+            else:
+                prev_result = {}
+
+    return {"result": result}
+        
