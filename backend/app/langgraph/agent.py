@@ -128,7 +128,7 @@ Return:
 ---
 
 For multi-step tasks:
-- First find HCP using search_hcp
+- First find HCP Id using search_hcp
 - Then use "$prev.hcp_id" in next step
 
 ---
