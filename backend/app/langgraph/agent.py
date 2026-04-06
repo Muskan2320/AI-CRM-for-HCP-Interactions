@@ -8,7 +8,7 @@ from langgraph.graph import StateGraph
 
 load_dotenv()
 
-from app.langgraph.tools import (
+from tools import (
     search_hcp_tool,
     log_interaction_tool,
     edit_interaction_tool,
@@ -207,4 +207,55 @@ def execute_plan(state):
             prev_result = {}
 
     return {"result": result}
+
+def route_after_decision(state):
+    if state.get("ask_user"):
+        return "ask_user"
+    elif state.get("plan"):
+        return "execute"
+    else:
+        return "error"
+    
+def ask_user_node(state):
+    return {
+        "result": state.get("question", "Need more information from user.")
+    }
+
+def error_node(state):
+    return {
+        "result": "Something went wrong. Please try again."
+    }
+
+builder = StateGraph(dict)
+
+builder.add_node("decide", decide_action)
+builder.add_node("execute", execute_plan)
+builder.add_node("ask_user", ask_user_node)
+builder.add_node("error", error_node)
+
+builder.set_entry_point("decide")
+
+builder.add_conditional_edges(
+    "decide",
+    route_after_decision,
+    {
+        "execute": "execute",
+        "ask_user": "ask_user",
+        "error": "error"
+    }
+)
+
+builder.set_finish_point("execute")
+builder.set_finish_point("ask_user")
+builder.set_finish_point("error")
+
+graph = builder.compile()
+
+if __name__ == "__main__":
+    while True:
+        user_input = input("\nEnter your query: ")
+
+        result = graph.invoke({"input": user_input})
+
+        print("\nResponse:\n", result.get("result", "No result"))
         
