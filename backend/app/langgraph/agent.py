@@ -29,7 +29,7 @@ import json
 def decide_action(state: AgentState):
     user_input = state["input"]
 
-    prompt = f"""
+    prompt = """
 You are an AI CRM assistant.
 
 Your job:
@@ -43,7 +43,8 @@ Your job:
 Available tools:
 
 1. search_hcp
-Description: Find doctor details
+Description: Find doctor details by ID or name + hospital. 
+This can be used as a pre-tool call for other tasks when hcp_id is not provided but name and hospital are available.
 Input:
 - hcp_id (optional)
 - name (optional)
@@ -54,7 +55,7 @@ Input:
 2. log_interaction
 Description: Log a new interaction with doctor
 Required:
-- doctor_name (string)
+- name (string)
 - hospital (string)
 
 Optional:
@@ -83,7 +84,7 @@ Optional:
 ---
 
 4. get_pending_followups
-Description: Fetch follow-ups
+Description: Fetch follow-ups that are pending
 Optional:
 - target_date (YYYY-MM-DD)
 
@@ -97,45 +98,69 @@ Required:
 ---
 
 RULES:
-- Output ONLY valid JSON
-- No explanations, no markdown
-- Always follow schema strictly
+
+1. NEVER ask user for HCP ID if doctor name or hospital is provided.
+   → ALWAYS use search_hcp first.
+
+2. Prefer multi-step reasoning over asking user.
+
+3. Only ask user if:
+   - interaction_id is missing for edit
+   - doctor_name AND hospital BOTH missing
+   - data cannot be inferred using any tool
+
+4. When doctor name is given:
+   → ALWAYS first call search_hcp
+   → THEN use "$prev.hcp_id" for next step
+
+5. Always minimize user interaction.
 
 ---
 
-If required information is missing:
+Examples:
 
-Return:
-{{
-  "action": "ask_user",
-  "question": "Ask clearly for missing required information"
-}}
-
----
-
-If all data is available:
-
-Return:
-{{
+User: "Show history of Dr Sharma"
+Output:
+{
   "steps": [
-    {{
-      "tool": "tool_name",
-      "data": {{...}}
-    }}
+    {
+      "tool": "search_hcp",
+      "data": {"name": "Sharma"}
+    },
+    {
+      "tool": "get_hcp_interaction_history",
+      "data": {"hcp_id": "$prev.hcp_id"}
+    }
   ]
-}}
+}
 
 ---
 
-For multi-step tasks:
-- First find HCP Id using search_hcp
-- Then use "$prev.hcp_id" in next step
+User: "Show followups"
+Output:
+{
+  "steps": [
+    {
+      "tool": "get_pending_followups",
+      "data": {"field_name": "value"}
+    }
+  ]
+}
 
 ---
 
+User: "Update interaction"
+Output:
+{
+  "action": "ask_user",
+  "question": "Please provide interaction_id"
+}
+
+---
 User input:
-{user_input}
 """
+
+    prompt += user_input
 
     response = llm.invoke(prompt)
 
