@@ -18,13 +18,42 @@ from tools import (
 
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
-    api_key=os.getenv("GROQ_API_KEY")
+    api_key=os.getenv("GROQ_API_KEY"),
+    temperature=0.2
 )
+
+def call_llm_with_retry(prompt, max_retries=3):
+    for attempt in range(max_retries):
+
+        response = llm.invoke(prompt)
+        content = response.content.strip()
+
+        try:
+            parsed = json.loads(content)
+            return parsed
+
+        except json.JSONDecodeError:
+            print(f"Retry {attempt+1}: Invalid JSON")
+
+    return {
+        "action": "ask_user",
+        "question": "Sorry, I didn't understand. Can you rephrase?"
+    }
+
+def validate_plan(parsed):
+
+    if "steps" not in parsed and parsed.get("action") != "ask_user":
+        return False
+
+    if "steps" in parsed:
+        for step in parsed["steps"]:
+            if "tool" not in step or "data" not in step:
+                return False
+
+    return True
 
 class AgentState(dict):
     pass
-
-import json
 
 def decide_action(state: AgentState):
     user_input = state["input"]
@@ -162,12 +191,16 @@ User input:
 
     prompt += user_input
 
-    response = llm.invoke(prompt)
-
-    content = response.content.strip()
-
     try:
-        parsed = json.loads(content)
+        parsed = call_llm_with_retry(prompt)
+
+        # Validate structure
+        if not validate_plan(parsed):
+            return {
+                "ask_user": True,
+                "question": "Can you clarify your request?",
+                "input": user_input
+            }
 
         # Case 1 → ask user
         if parsed.get("action") == "ask_user":
@@ -185,8 +218,8 @@ User input:
 
     except Exception as e:
         return {
-            "error": "INVALID_JSON_FROM_LLM",
-            "raw_output": content,
+            "ask_user": True,
+            "question": f"Something went wrong got error: {e}. Can you rephrase?",
             "input": user_input
         }
     
