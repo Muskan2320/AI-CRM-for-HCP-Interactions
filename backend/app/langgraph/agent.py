@@ -1,6 +1,6 @@
+import os
 import json
 from dotenv import load_dotenv
-import os
 from typing import TypedDict
 
 from langgraph.graph import StateGraph
@@ -17,20 +17,40 @@ from app.langgraph.tools import (
 # ---------------- LLM ---------------- #
 load_dotenv()
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
     api_key=os.getenv("GROQ_API_KEY"),
-    temperature=0.2
+    model="llama-3.3-70b-versatile",
+    temperature=0
 )
 
 # ---------------- STATE ---------------- #
 
-class AgentState(TypedDict):
+class AgentState(TypedDict, total=False):
     input: str
     extracted: dict
     plan: list
     ask_user: bool
     question: str
     output: str
+
+# ---------------- HELPERS ---------------- #
+
+def normalize_extracted_data(data: dict, user_input: str):
+    text = user_input.lower()
+
+    # detect count intent
+    if "how many" in text or "count" in text:
+        data["intent"] = "count"
+
+    # invalid generic names
+    invalid_names = ["doctor", "doctors", "all", "any"]
+
+    name = data.get("name")
+    if name and name.lower().strip() in invalid_names:
+        data["name"] = None
+        if data.get("intent") != "count":
+            data["intent"] = "list"
+
+    return data
 
 # ---------------- RETRY ---------------- #
 
@@ -43,7 +63,6 @@ def call_llm_with_retry(prompt, max_retries=3):
             print("\n--- RAW ---")
             print(content)
 
-            # 🔥 extract only JSON part
             start = content.find("{")
             end = content.rfind("}") + 1
 
@@ -60,12 +79,16 @@ def call_llm_with_retry(prompt, max_retries=3):
 # ---------------- VALIDATION ---------------- #
 
 def validate_plan(parsed):
-    if "steps" not in parsed and parsed.get("action") != "ask_user":
+    if parsed.get("action") == "ask_user":
+        return True
+
+    if "steps" not in parsed:
         return False
-    if "steps" in parsed:
-        for step in parsed["steps"]:
-            if "tool" not in step or "data" not in step:
-                return False
+
+    for step in parsed["steps"]:
+        if "tool" not in step or "data" not in step:
+            return False
+
     return True
 
 # ---------------- STEP 1: EXTRACT ---------------- #
@@ -76,10 +99,8 @@ def extract_intent(state: AgentState):
     prompt = f"""
 Return ONLY valid JSON.
 
-No explanation. No text.
-
 {{
-  "intent": "search|history|log|edit|followup",
+  "intent": "search|history|log|edit|followup|list|count",
   "name": "string or null",
   "hospital": "string or null",
   "interaction_id": null
@@ -91,6 +112,8 @@ User input:
 
     parsed = call_llm_with_retry(prompt)
 
+    parsed = normalize_extracted_data(parsed, user_input)
+
     return {
         "extracted": parsed,
         "input": user_input
@@ -101,17 +124,75 @@ User input:
 def plan_action(state: AgentState):
     extracted = state["extracted"]
 
+    intent = extracted.get("intent")
+    name = extracted.get("name")
+    hospital = extracted.get("hospital")
+
+    # LIST
+    if intent == "list":
+        return {
+            "plan": [
+                {
+                    "tool": "search_hcp",
+                    "data": {
+                        "hospital": hospital
+                    }
+                }
+            ],
+            "input": state["input"]
+        }
+
+    # COUNT
+    if intent == "count":
+        return {
+            "plan": [
+                {
+                    "tool": "search_hcp",
+                    "data": {
+                        "hospital": hospital
+                    }
+                },
+                {
+                    "tool": "count_results",
+                    "data": {
+                        "items": "$prev"
+                    }
+                }
+            ],
+            "input": state["input"]
+        }
+
+    # HISTORY
+    if intent == "history" and name:
+        return {
+            "plan": [
+                {
+                    "tool": "search_hcp",
+                    "data": {
+                        "name": name,
+                        "hospital": hospital
+                    }
+                },
+                {
+                    "tool": "get_hcp_interaction_history",
+                    "data": {
+                        "hcp_id": "$prev.hcp_id"
+                    }
+                }
+            ],
+            "input": state["input"]
+        }
+
+    # fallback LLM (restricted tools)
     prompt = f"""
-You MUST return ONLY valid JSON.
+Return ONLY valid JSON.
+
+Allowed tools:
+search_hcp, log_interaction, edit_interaction,
+get_pending_followups, get_hcp_interaction_history
 
 Data:
 {json.dumps(extracted)}
-
-Rules:
-- If name exists → ALWAYS call search_hcp first
-- Then use "$prev.hcp_id"
-- Then call get_hcp_interaction_history if intent = history
-- NEVER ask for HCP ID if name exists
 
 Return:
 {{
@@ -138,6 +219,13 @@ Return:
         "input": state["input"]
     }
 
+# ---------------- TOOL: COUNT ---------------- #
+
+def count_results(items):
+    if isinstance(items, list):
+        return {"count": len(items)}
+    return {"count": 0}
+
 # ---------------- STEP 3: EXECUTE ---------------- #
 
 def execute_plan(state: AgentState):
@@ -148,7 +236,8 @@ def execute_plan(state: AgentState):
         "log_interaction": log_interaction_tool,
         "edit_interaction": edit_interaction_tool,
         "get_pending_followups": get_pending_followups_tool,
-        "get_hcp_interaction_history": get_hcp_interaction_history_tool
+        "get_hcp_interaction_history": get_hcp_interaction_history_tool,
+        "count_results": count_results
     }
 
     prev_result = {}
@@ -157,24 +246,29 @@ def execute_plan(state: AgentState):
         tool_name = step["tool"]
         data = step["data"]
 
-        # FIX doctor_name → name mismatch
+        # fix doctor_name → name
         if "doctor_name" in data:
             data["name"] = data.pop("doctor_name")
 
-        for k, v in data.items():
-            if isinstance(v, str) and "$prev." in v:
-                key = v.split(".")[1]
-                data[k] = prev_result.get(key)
+        # normalize name
+        if "name" in data and data["name"]:
+            data["name"] = data["name"].lower().replace("dr ", "").strip()
 
-    for step in plan:
-        tool_name = step["tool"]
-        data = step["data"]
-
-        # replace $prev
+        # handle $prev
         for k, v in data.items():
-            if isinstance(v, str) and "$prev." in v:
+            if isinstance(v, str) and v == "$prev":
+                data[k] = prev_result
+
+            elif isinstance(v, str) and "$prev." in v:
                 key = v.split(".")[1]
-                data[k] = prev_result.get(key)
+                value = prev_result.get(key)
+
+                if value is None:
+                    return {
+                        "output": f"Could not find {key}. Please refine your query."
+                    }
+
+                data[k] = value
 
         tool = tools_map.get(tool_name)
 
@@ -183,14 +277,21 @@ def execute_plan(state: AgentState):
 
         result = tool(**data)
 
-        if isinstance(result, list) and len(result) > 0:
-            prev_result = result[0]
+        # handle result
+        if isinstance(result, list):
+            if len(result) == 0:
+                return {"output": "No matching doctor found."}
+            prev_result = result
+
         elif isinstance(result, dict):
             prev_result = result
 
+        else:
+            prev_result = {}
+
     return {"output": result}
 
-# ---------------- ROUTER ---------------- #
+# ---------------- ROUTING ---------------- #
 
 def route_after_plan(state):
     if state.get("ask_user"):
@@ -200,12 +301,8 @@ def route_after_plan(state):
     else:
         return "error"
 
-# ---------------- ASK USER ---------------- #
-
 def ask_user_node(state):
-    return {"output": state.get("question", "Need more info")}
-
-# ---------------- ERROR ---------------- #
+    return {"output": state.get("question", "Need more information")}
 
 def error_node(state):
     return {"output": "Something went wrong"}
@@ -245,7 +342,5 @@ graph = builder.compile()
 if __name__ == "__main__":
     while True:
         user_input = input("\nEnter your query: ")
-
         result = graph.invoke({"input": user_input})
-
-        print("\nResponse:\n", result["output"])
+        print("\nResponse:\n", result.get("output"))
