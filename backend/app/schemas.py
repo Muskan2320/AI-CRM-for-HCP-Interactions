@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 from datetime import date
 from typing import Optional, Literal
 
+class ChatRequest(BaseModel):
+    message: str
 class InteractionCreate(BaseModel):
     doctor_name: str
     hospital: str
