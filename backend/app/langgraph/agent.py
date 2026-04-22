@@ -37,11 +37,15 @@ class AgentState(TypedDict, total=False):
 def normalize_extracted_data(data: dict, user_input: str):
     text = user_input.lower()
 
-    # detect count intent
+    # ---- DETECT LOG INTERACTION ----
+    if any(word in text for word in ["interaction", "met", "spoke", "discussed"]):
+        data["intent"] = "log"
+
+    # ---- DETECT COUNT ----
     if "how many" in text or "count" in text:
         data["intent"] = "count"
 
-    # invalid generic names
+    # ---- GENERIC NAME FIX ----
     invalid_names = ["doctor", "doctors", "all", "any"]
 
     name = data.get("name")
