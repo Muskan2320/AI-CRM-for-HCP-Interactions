@@ -4,8 +4,18 @@ from datetime import date
 
 from .database import get_db
 from . import models, schemas
+from app.langgraph.agent import graph
 
 router = APIRouter()
+
+@router.post("/chat")
+def chat(request: schemas.ChatRequest):
+    result = graph.invoke({"input": request.message})
+
+    return {
+        "response": result.get("output", "Sorry, I couldn't process your request.")
+    }
+
 
 @router.post("/log-interaction")
 def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_db)):
