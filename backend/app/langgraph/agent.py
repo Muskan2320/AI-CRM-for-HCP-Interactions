@@ -20,7 +20,7 @@ load_dotenv()
 llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
     model="llama-3.3-70b-versatile",
-    temperature=0
+    temperature=0.2
 )
 
 # ---------------- STATE ---------------- #
@@ -30,29 +30,123 @@ class AgentState(TypedDict):
     plan: dict
     output: str
 
-# ---------------- SYSTEM PROMPT ---------------- #
+# ---------------- SYSTEM INSTRUCTION ---------------- #
 
-SYSTEM_PROMPT = """
-You are an AI CRM assistant.
+SYSTEM_INSTRUCTION = """
+You are an AI CRM assistant for managing doctor (HCP) interactions.
 
-Available tools:
-- search_hcp(name?, hospital?, hcp_id?)
-- log_interaction(name, hospital, notes?)
-- edit_interaction(interaction_id, ...)
-- get_pending_followups()
-- get_hcp_interaction_history(hcp_id)
+Your job:
+- Understand user intent
+- Select correct tool(s)
+- Extract required and optional inputs
+- Return execution steps in JSON
 
-Rules:
-- Return ONLY JSON
-- No explanation
-- If multiple steps needed, return in order
+----------------------
+AVAILABLE TOOLS
+----------------------
 
-Format:
+1. search_hcp
+Description:
+Find doctor (HCP) details.
+
+Required Inputs:
+- NONE
+
+Optional Inputs:
+- name (string)
+- hospital (string)
+- hcp_id (int)
+
+Use cases:
+- Find doctor
+- Get HCP ID before history
+
+Output:
+List of doctors with:
+- hcp_id
+- name
+- hospital
+- specialization
+- city
+
+
+2. log_interaction
+Description:
+Log a new interaction with a doctor.
+
+Required Inputs:
+- name (string)
+- hospital (string)
+
+Optional Inputs:
+- notes (string)
+- follow_up_action (string)
+- follow_up_date (YYYY-MM-DD)
+
+Use cases:
+- User describes meeting or discussion
+
+IMPORTANT:
+Extract structured data from user sentence.
+
+
+3. edit_interaction
+Description:
+Update an interaction.
+
+Required Inputs:
+- interaction_id (int)
+
+Optional Inputs:
+- notes
+- follow_up_status (pending/completed/cancelled/no_follow_up)
+- follow_up_date
+
+
+4. get_pending_followups
+Description:
+Get pending follow-ups.
+
+Required Inputs:
+- NONE
+
+Optional Inputs:
+- NONE
+
+
+5. get_hcp_interaction_history
+Description:
+Get interaction history of a doctor.
+
+Required Inputs:
+- hcp_id (int)
+
+Optional Inputs:
+- NONE
+
+
+----------------------
+RULES
+----------------------
+
+- ALWAYS return ONLY valid JSON
+- NO explanation text
+- NO extra text outside JSON
+- Use correct tool name EXACTLY
+- If required input missing → first get it using another tool
+- If name is given but hcp_id is missing:
+  → first call search_hcp
+  → then use $prev.hcp_id
+
+----------------------
+OUTPUT FORMAT
+----------------------
+
 {
   "steps": [
     {
       "tool": "tool_name",
-      "data": {}
+      "data": { }
     }
   ]
 }
@@ -68,13 +162,13 @@ TOOLS = {
     "get_hcp_interaction_history": get_hcp_interaction_history_tool
 }
 
-# ---------------- STEP 1: PLAN ---------------- #
+# ---------------- PLAN STEP ---------------- #
 
 def create_plan(state: AgentState):
     user_input = state["input"]
 
     messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
+        SystemMessage(content=SYSTEM_INSTRUCTION),
         HumanMessage(content=user_input)
     ]
 
@@ -84,7 +178,7 @@ def create_plan(state: AgentState):
     print("\n--- RAW LLM ---")
     print(content)
 
-    # extract JSON safely
+    # Extract JSON safely
     start = content.find("{")
     end = content.rfind("}") + 1
     content = content[start:end]
@@ -99,7 +193,7 @@ def create_plan(state: AgentState):
         "input": user_input
     }
 
-# ---------------- STEP 2: EXECUTE ---------------- #
+# ---------------- EXECUTE STEP ---------------- #
 
 def execute_plan(state: AgentState):
     plan = state.get("plan", {})
@@ -116,7 +210,7 @@ def execute_plan(state: AgentState):
         if not tool:
             return {"output": f"Unknown tool: {tool_name}"}
 
-        # handle chaining
+        # Handle chaining ($prev)
         for k, v in data.items():
             if isinstance(v, str) and "$prev." in v and prev_result:
                 key = v.split(".")[1]
@@ -124,6 +218,7 @@ def execute_plan(state: AgentState):
 
         result = tool(**data)
 
+        # Store for chaining
         if isinstance(result, list) and len(result) > 0:
             prev_result = result[0]
         elif isinstance(result, dict):
@@ -140,7 +235,6 @@ builder.add_node("execute", execute_plan)
 
 builder.set_entry_point("plan")
 builder.add_edge("plan", "execute")
-
 builder.set_finish_point("execute")
 
 graph = builder.compile()
