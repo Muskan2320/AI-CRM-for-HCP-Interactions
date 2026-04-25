@@ -116,7 +116,7 @@ def get_pending_followups(target_date: date = Query(None), db: Session = Depends
     query = db.query(models.Interaction).filter(
         models.Interaction.follow_up_status == "pending",
         models.Interaction.follow_up_date != None
-    ).all()
+    )
 
     if target_date:
         query = query.filter(models.Interaction.follow_up_date <= target_date)
