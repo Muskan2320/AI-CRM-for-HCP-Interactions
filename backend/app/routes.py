@@ -121,9 +121,10 @@ def get_pending_followups(target_date: date = Query(None), db: Session = Depends
     if target_date:
         query = query.filter(models.Interaction.follow_up_date <= target_date)
 
-    followups = query.order_by(models.Interaction.follow_up_date.asc()).all()
-    result = []
+    query = query.order_by(models.Interaction.follow_up_date.asc())
+    followups = query.all()
 
+    result = []
     for f in followups:
         result.append({
             "interaction_id": f.id,
