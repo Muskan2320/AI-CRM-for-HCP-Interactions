@@ -200,15 +200,21 @@ def execute_plan(state: AgentState):
     steps = plan.get("steps", [])
 
     prev_result = None
+    last_result = None
 
-    for step in steps:
+    for idx, step in enumerate(steps):
         tool_name = step.get("tool")
         data = step.get("data", {})
 
         tool = TOOLS.get(tool_name)
 
         if not tool:
-            return {"output": f"Unknown tool: {tool_name}"}
+            return {
+                "error": True,
+                "step": idx,
+                "message": f"Unknown tool: {tool_name}",
+                "plan": plan
+            }
 
         # Handle chaining ($prev)
         for k, v in data.items():
@@ -216,22 +222,122 @@ def execute_plan(state: AgentState):
                 key = v.split(".")[1]
                 data[k] = prev_result.get(key)
 
-        result = tool(**data)
+        try:
+            result = tool(**data)
+        except Exception as e:
+            return {
+                "error": True,
+                "step": idx,
+                "message": str(e),
+                "failed_tool": tool_name,
+                "data": data,
+                "plan": plan
+            }
 
-        # Store for chaining
+        # Store result
+        last_result = result
+
+        # Update chaining
         if isinstance(result, list) and len(result) > 0:
             prev_result = result[0]
         elif isinstance(result, dict):
             prev_result = result
 
-    return {"output": result}
+    return {"output": last_result}
+
+def execute_with_retry(state: AgentState, max_retries=2):
+    user_input = state["input"]
+    plan = state.get("plan", {})
+
+    for attempt in range(max_retries + 1):
+        print(f"Retry attempt {attempt+1}")
+
+        result = execute_plan({
+            "plan": plan,
+            "input": user_input
+        })
+
+        # SUCCESS
+        if not result.get("error"):
+            return result
+
+        # FAILURE
+        error_info = result
+
+        print(f"\n--- RETRY {attempt+1} ---")
+        print("Error:", error_info["message"])
+
+        # stop if max retries reached
+        if attempt == max_retries:
+            return {
+                "output": f"Failed after {max_retries} retries",
+                "last_error": error_info["message"]
+            }
+
+        # Ask LLM to fix plan
+        fix_prompt = f"""
+The previous execution failed.
+
+User request:
+{user_input}
+
+Error:
+{error_info['message']}
+
+Failed tool:
+{error_info.get('failed_tool')}
+
+Failed step index:
+{error_info.get('step')}
+
+Previous plan:
+{json.dumps(plan)}
+
+Fix the plan.
+
+Rules:
+- Keep valid steps unchanged
+- Fix only the failing step
+- Ensure required inputs are present
+- DO NOT add unnecessary tools
+
+Return ONLY valid JSON:
+{{
+  "steps": [
+    {{
+      "tool": "tool_name",
+      "data": {{}}
+    }}
+  ]
+}}
+"""
+
+        messages = [
+            SystemMessage(content=SYSTEM_INSTRUCTION),
+            HumanMessage(content=fix_prompt)
+        ]
+
+        response = llm.invoke(messages)
+        content = response.content.strip()
+
+        # extract JSON safely
+        start = content.find("{")
+        end = content.rfind("}") + 1
+        content = content[start:end]
+
+        try:
+            plan = json.loads(content)
+        except:
+            return {"output": "Failed to fix plan"}
+
+    return {"output": "Execution failed"}
 
 # ---------------- GRAPH ---------------- #
 
 builder = StateGraph(AgentState)
 
 builder.add_node("plan", create_plan)
-builder.add_node("execute", execute_plan)
+builder.add_node("execute", execute_with_retry)
 
 builder.set_entry_point("plan")
 builder.add_edge("plan", "execute")
