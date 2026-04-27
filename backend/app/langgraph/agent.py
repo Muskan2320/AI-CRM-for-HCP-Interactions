@@ -134,9 +134,10 @@ RULES
 - NO extra text outside JSON
 - Use correct tool name EXACTLY
 - If required input missing → first get it using another tool
-- If name is given but hcp_id is missing:
+- If name is given but you need hcp_id for another tool:
   → first call search_hcp
   → then use $prev.hcp_id
+  → only output fields are accessible for chaining, that are not present in user input
 
 ----------------------
 OUTPUT FORMAT
@@ -300,6 +301,7 @@ Rules:
 - Fix only the failing step
 - Ensure required inputs are present
 - DO NOT add unnecessary tools
+- Also, names to be stored and fetched without prefix suffix like dr., hospital etc.
 
 Return ONLY valid JSON:
 {{
