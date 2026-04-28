@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import date
-from typing import Optional, Literal
+from typing import Dict, Optional, Literal
 
 class ChatRequest(BaseModel):
     message: str
@@ -28,3 +28,10 @@ class InteractionUpdate(BaseModel):
     follow_up_status: Optional[Literal["pending", "completed", "cancelled", "no_follow_up"]] = None
     
     notes: Optional[str] = None
+
+class Step(BaseModel):
+    tool: str
+    data: Dict
+
+class Plan(BaseModel):
+    steps: list[Step]
