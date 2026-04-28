@@ -14,6 +14,7 @@ from app.langgraph.tools import (
     get_pending_followups_tool,
     get_hcp_interaction_history_tool
 )
+from app.schemas import Plan
 
 # ---------------- LLM ---------------- #
 load_dotenv()
@@ -132,12 +133,13 @@ RULES
 - ALWAYS return ONLY valid JSON
 - NO explanation text
 - NO extra text outside JSON
+- NO extra tool calls
 - Use correct tool name EXACTLY
 - If required input missing → first get it using another tool
-- If name is given but you need hcp_id for another tool:
+- If hcp_id required for another tool:
   → first call search_hcp
   → then use $prev.hcp_id
-  → only output fields are accessible for chaining, that are not present in user input
+  → $prev to be used for only for missing fields, that are not present in user input
 
 ----------------------
 OUTPUT FORMAT
@@ -185,19 +187,19 @@ def create_plan(state: AgentState):
     content = content[start:end]
 
     try:
-        plan = json.loads(content)
-    except:
-        return {"output": "Invalid LLM response"}
+        plan = Plan(**json.loads(content))
+    except Exception as e:
+        return {"output": f"Invalid LLM response {str(e)}"}
 
     return {
-        "plan": plan,
+        "plan": plan.dict(),
         "input": user_input
     }
 
 # ---------------- EXECUTE STEP ---------------- #
 
 def execute_plan(state: AgentState):
-    plan = state.get("plan", {})
+    plan = state.get("plan")
     steps = plan.get("steps", [])
 
     prev_result = None
