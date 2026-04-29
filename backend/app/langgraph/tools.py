@@ -19,7 +19,9 @@ def search_hcp_tool(hcp_id: int = None, name: str = None, hospital: str = None):
 
     return response.json()
 
-def log_interaction_tool(data: dict):
+def log_interaction_tool(**data):
+    print("\n--- Logging Interaction with Data ---")
+    print(data)
     response = requests.post(f"{BASE_URL}/log-interaction", json=data)
 
     return response.json()
