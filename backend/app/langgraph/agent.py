@@ -254,6 +254,7 @@ def execute_with_retry(state: AgentState, max_retries=2):
 
     for attempt in range(max_retries + 1):
         print(f"Retry attempt {attempt+1}")
+        print("Executing plan:", json.dumps(plan, indent=2))
 
         result = execute_plan({
             "plan": plan,
@@ -287,22 +288,21 @@ User request:
 Error:
 {error_info['message']}
 
+Previous plan:
+{json.dumps(plan)}
+
 Failed tool:
 {error_info.get('failed_tool')}
 
 Failed step index:
 {error_info.get('step')}
 
-Previous plan:
-{json.dumps(plan)}
-
 Fix the plan.
 
 Rules:
-- Keep valid steps unchanged
-- Fix only the failing step
-- Ensure required inputs are present
-- DO NOT add unnecessary tools
+- Understand the error and fix the plan accordingly
+- Ensure required inputs are present and fetched correctly from user input
+- Make sure no unnecessary tools called
 - Also, names to be stored and fetched without prefix suffix like dr., hospital etc.
 
 Return ONLY valid JSON:
