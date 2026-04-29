@@ -23,14 +23,14 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
 
     # SEARCH DOCTOR
     hcp = db.query(models.HCP).filter(
-        models.HCP.name == data.doctor_name,
+        models.HCP.name == data.name,
         models.HCP.hospital == data.hospital
     ).first()
 
     # IF DOCTOR NOT FOUND, CREATE NEW
     if not hcp:
         hcp = models.HCP(
-            name=data.doctor_name,
+            name=data.name,
             hospital=data.hospital,
             specialization=data.specialization,
             city=data.city
@@ -129,7 +129,7 @@ def get_pending_followups(target_date: date = Query(None), db: Session = Depends
         result.append({
             "interaction_id": f.id,
             "hcp_id": f.hcp_id,
-            "doctor_name": f.hcp.name,
+            "name": f.hcp.name,
             "hospital": f.hcp.hospital,
             "follow_up_action": f.follow_up_action,
             "follow_up_date": f.follow_up_date,
