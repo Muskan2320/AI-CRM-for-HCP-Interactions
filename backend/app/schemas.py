@@ -5,7 +5,7 @@ from typing import Dict, Optional, Literal
 class ChatRequest(BaseModel):
     message: str
 class InteractionCreate(BaseModel):
-    doctor_name: str
+    name: str
     hospital: str
 
     specialization: Optional[str] = None
