@@ -302,7 +302,7 @@ Fix the plan.
 Rules:
 - Understand the error and fix the plan accordingly
 - Ensure required inputs are present and fetched correctly from user input
-- Make sure no unnecessary tools called
+- Make sure no unnecessary tools called and remove them from plan
 - Also, names to be stored and fetched without prefix suffix like dr., hospital etc.
 
 Return ONLY valid JSON:
@@ -331,8 +331,8 @@ Return ONLY valid JSON:
 
         try:
             plan = json.loads(content)
-        except:
-            return {"output": "Failed to fix plan"}
+        except Exception as e:
+            return {"output": "Failed to fix plan got error: " + str(e)}
 
     return {"output": "Execution failed"}
 
