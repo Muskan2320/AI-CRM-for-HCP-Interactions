@@ -56,11 +56,6 @@ Optional Inputs:
 - hospital (string)
 - hcp_id (int)
 
-Use cases:
-- Find a doctor existence or details based on name or hospital
-- Get HCP ID for other tools that need it
-- No details then this tool return recent doctors added to database with their details
-
 Output:
 List of doctor(s) with:
 - hcp_id
@@ -68,6 +63,11 @@ List of doctor(s) with:
 - hospital
 - specialization
 - city
+
+Use cases:
+- Find a doctor existence or details based on name or hospital
+- Get HCP ID for other tools that need it
+- No details then this tool return recent doctors added to database with their details
 
 
 2. log_interaction
@@ -94,37 +94,50 @@ Use cases:
 - Log interaction(Add to databse) using detail that user provide about doctor and interaction
 - This tool can log interaction irrespective of existence of doctor in database, so no extra checks required.
 
-IMPORTANT:
-Extract structured data from user sentence. Keep data time format as provided in instructions above.
-
-
 3. edit_interaction
-Description:
-Update an interaction.
 
 Required Inputs:
 - interaction_id (int)
 
 Optional Inputs:
-- notes
+- notes (string)
+- follow_up_action (string)
 - follow_up_status (pending/completed/cancelled/no_follow_up)
-- follow_up_date
+- follow_up_date (YYYY-MM-DD)
+
+OUTPUT:
+- message (string) - success message
+- interaction_id
+- updated_fields (list of fields that were updated with this tool call)
+
+Use cases:
+- Update interaction details like notes, follow-up action, status or date.
+- Sometimes interaction_id can be obtained from get_hcp_interaction_history tool calls only if interaction_id not mentioned in user input.
 
 
 4. get_pending_followups
-Description:
-Get pending follow-ups.
 
 Required Inputs:
 - NONE
 
 Optional Inputs:
-- NONE
+- target_date (YYYY-MM-DD)
 
+OUTPUT:
+List of pending follow-ups with:
+- interaction_id
+- hcp_id
+- name
+- hospital
+- follow_up_action
+- follow_up_date
+- topic
+
+Use cases:
+- If date provided, get all pending follow-ups that are due on or before the target date. 
+- If no date provided, get all pending follow-ups irrespective of date.
 
 5. get_hcp_interaction_history
-Description:
-Get interaction history of a doctor.
 
 Required Inputs:
 - hcp_id (int)
@@ -132,6 +145,23 @@ Required Inputs:
 Optional Inputs:
 - NONE
 
+OUTPUT:
+- List of interactions with:
+    - interaction_id
+    - topic
+    - interaction_date
+    - follow_up_action
+    - follow_up_date
+    - follow_up_status
+    - notes
+
+Use cases:
+- Get details of interactions(and interaction history) with any doctor.
+- This tool can be used for getting interaction_id
+
+
+IMPORTANT:
+Extract structured data from user sentence. Keep data type format as provided in instructions above.
 
 ----------------------
 RULES
