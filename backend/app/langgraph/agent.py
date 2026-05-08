@@ -263,7 +263,7 @@ def execute_plan(state: AgentState):
                 data[k] = prev_result.get(key)
 
         try:
-            result = tool(**data)
+            result = tool.invoke(data)
         except Exception as e:
             return {
                 "error": True,
