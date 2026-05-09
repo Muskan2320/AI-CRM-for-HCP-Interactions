@@ -1,7 +1,9 @@
 import json
 import os
+import re
 from dotenv import load_dotenv
 from typing import TypedDict
+from datetime import date, timedelta
 
 from langgraph.graph import StateGraph
 from langchain_groq import ChatGroq
@@ -30,6 +32,31 @@ class AgentState(TypedDict):
     input: str
     plan: dict
     output: str
+
+ALLOWED_PARAMS = {
+    "search_hcp": {"hcp_id", "name", "hospital"},
+    "log_interaction": {
+        "name",
+        "hospital",
+        "topic",
+        "specialization",
+        "city",
+        "interaction_date",
+        "follow_up_action",
+        "follow_up_date",
+        "notes"
+    },
+    "edit_interaction": {
+        "interaction_id",
+        "topic",
+        "follow_up_action",
+        "follow_up_date",
+        "follow_up_status",
+        "notes"
+    },
+    "get_pending_followups": {"target_date"},
+    "get_hcp_interaction_history": {"hcp_id"}
+}
 
 # ---------------- SYSTEM INSTRUCTION ---------------- #
 
@@ -233,6 +260,23 @@ def create_plan(state: AgentState):
         "input": user_input
     }
 
+def normalize_dates(data):
+
+    if "follow_up_date" in data:
+
+        value = str(data["follow_up_date"]).lower()
+
+        match = re.search(r"(\\d+)\\s*day", value)
+
+        if match:
+            days = int(match.group(1))
+
+            data["follow_up_date"] = (
+                date.today() + timedelta(days=days)
+            ).isoformat()
+
+    return data
+
 # ---------------- EXECUTE STEP ---------------- #
 
 def execute_plan(state: AgentState):
@@ -261,6 +305,15 @@ def execute_plan(state: AgentState):
             if isinstance(v, str) and "$prev." in v and prev_result:
                 key = v.split(".")[1]
                 data[k] = prev_result.get(key)
+
+        allowed = ALLOWED_PARAMS.get(tool_name, set())
+
+        data = {
+            k: v for k, v in data.items()
+            if k in allowed
+        }
+
+        data = normalize_dates(data)
 
         try:
             result = tool.invoke(data)
