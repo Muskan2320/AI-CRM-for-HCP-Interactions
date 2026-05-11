@@ -170,60 +170,74 @@ def get_pending_followups(target_date: date = Query(None), db: Session = Depends
 
 @router.get("/hcp/{hcp_id}/interaction-history")
 def get_hcp_interaction_history(hcp_id: int, db: Session = Depends(get_db)):
-    interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
+    try:
+        interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
 
-    if not interactions:
-        return {"EMPTY": "No interactions found for this HCP"}
-    
-    result = []
-    for i in interactions:
-        result.append({
-            "interaction_id": i.id,
-            "interaction_date": i.Interaction_date,
-            "topic": i.topic,
-            "follow_up_action": i.follow_up_action,
-            "follow_up_date": i.follow_up_date,
-            "follow_up_status": i.follow_up_status,
-            "notes": i.notes
-        })
+        if not interactions:
+            return {"EMPTY": "No interactions found for this HCP"}
+        
+        result = []
+        for i in interactions:
+            result.append({
+                "interaction_id": i.id,
+                "interaction_date": i.Interaction_date,
+                "topic": i.topic,
+                "follow_up_action": i.follow_up_action,
+                "follow_up_date": i.follow_up_date,
+                "follow_up_status": i.follow_up_status,
+                "notes": i.notes
+            })
 
-    return result
+        return result
+    except Exception as e:
+
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @router.get("/hcp/search")
 def search_hcp(hcp_id: int = None,name: str = None, hospital: str = None, limit: int = 10, db: Session = Depends(get_db)):
-    query = db.query(models.HCP)
+    try:
+        query = db.query(models.HCP)
 
-    if hcp_id:
-        hcp = query.filter(models.HCP.id == hcp_id).first()
+        if hcp_id is not None:
+            hcp = query.filter(models.HCP.id == hcp_id).first()
 
-        if not hcp:
-            return {"error": "HCP not found"}
-        
-        results = [hcp]
-        
-    elif not name and not hospital:
-        results = query.order_by(models.HCP.created_at.desc()).limit(limit=limit).all()
+            if not hcp:
+                return {"error": "HCP not found"}
+            
+            results = [hcp]
+            
+        elif not name and not hospital:
+            results = query.order_by(models.HCP.created_at.desc()).limit(limit=limit).all()
 
-    else:
-        if name and hospital:
-            query = query.filter(
-                models.HCP.name.ilike(f"%{name}%"),
-                models.HCP.hospital.ilike(f"%{hospital}%")
-            )
-        elif name:
-            query = query.filter(models.HCP.name.ilike(f"%{name}%"))
-        elif hospital:
-            query = query.filter(models.HCP.hospital.ilike(f"%{hospital}%"))
+        else:
+            if name and hospital:
+                query = query.filter(
+                    models.HCP.name.ilike(f"%{name}%"),
+                    models.HCP.hospital.ilike(f"%{hospital}%")
+                )
+            elif name:
+                query = query.filter(models.HCP.name.ilike(f"%{name}%"))
+            elif hospital:
+                query = query.filter(models.HCP.hospital.ilike(f"%{hospital}%"))
 
-        results = query.all()
+            results = query.all()
 
-    return [
-        {
-            "hcp_id": hcp.id,
-            "name": hcp.name,
-            "hospital": hcp.hospital,
-            "specialization": hcp.specialization,
-            "city": hcp.city
+        return [
+            {
+                "hcp_id": hcp.id,
+                "name": hcp.name,
+                "hospital": hcp.hospital,
+                "specialization": hcp.specialization,
+                "city": hcp.city
+            }
+            for hcp in results
+        ]
+    except Exception as e:
+
+        return {
+            "success": False,
+            "error": str(e)
         }
-        for hcp in results
-    ]
