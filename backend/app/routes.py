@@ -14,6 +14,7 @@ def chat(request: schemas.ChatRequest):
         result = graph.invoke({"input": request.message})
 
         return {
+            "success": True,
             "response": result.get("output", "Sorry, I couldn't process your request.")
         }
     except Exception as e:
@@ -57,7 +58,7 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
         # LOG INTERACTION
         interaction = models.Interaction(
             hcp_id=hcp.id,
-            Interaction_date=data.interaction_date,
+            interaction_date=data.interaction_date,
             topic=data.topic,
             follow_up_action=data.follow_up_action,
             follow_up_date=data.follow_up_date,
@@ -71,10 +72,13 @@ def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_d
         db.refresh(interaction)
 
         return {
-            "message": "Interaction logged successfully",
-            "interaction_id": interaction.id,
-            "hcp_id": hcp.id,
-            "hcp_created": hcp_created
+            "success": True,
+            "data": {
+                "message": "Interaction logged successfully",
+                "interaction_id": interaction.id,
+                "hcp_id": hcp.id,
+                "hcp_created": hcp_created
+            }
         }
     except Exception as e:
 
@@ -93,7 +97,7 @@ def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db:
         ).first()
 
         if not interaction:
-            return {"error": "Interaction not found"}
+            return {"success": False, "error": "Interaction not found"}
         
         updated_fields = []
 
@@ -121,9 +125,12 @@ def update_interaction(interaction_id: int, data: schemas.InteractionUpdate, db:
         db.refresh(interaction)
 
         return {
-            "message": "Interaction updated successfully",
-            "interaction_id": interaction.id,
-            "updated_fields": updated_fields
+            "success": True,
+            "data": {
+                "message": "Interaction updated successfully",
+                "interaction_id": interaction.id,
+                "updated_fields": updated_fields
+            }
         }
     except Exception as e:
 
@@ -139,7 +146,7 @@ def get_pending_followups(target_date: date = Query(None), db: Session = Depends
     try:
         query = db.query(models.Interaction).filter(
             models.Interaction.follow_up_status == "pending",
-            models.Interaction.follow_up_date != None
+            models.Interaction.follow_up_date.isnot(None)
         )
 
         if target_date:
@@ -160,7 +167,10 @@ def get_pending_followups(target_date: date = Query(None), db: Session = Depends
                 "topic": f.topic
             })
 
-        return result
+        return {
+            "success": True,
+            "data": result
+        }
     except Exception as e:
 
         return {
@@ -174,13 +184,13 @@ def get_hcp_interaction_history(hcp_id: int, db: Session = Depends(get_db)):
         interactions = db.query(models.Interaction).filter(models.Interaction.hcp_id == hcp_id).all()
 
         if not interactions:
-            return {"EMPTY": "No interactions found for this HCP"}
+            return {"success": True, "data": [], "message": "No interactions found for this HCP"}
         
         result = []
         for i in interactions:
             result.append({
                 "interaction_id": i.id,
-                "interaction_date": i.Interaction_date,
+                "interaction_date": i.interaction_date,
                 "topic": i.topic,
                 "follow_up_action": i.follow_up_action,
                 "follow_up_date": i.follow_up_date,
@@ -188,7 +198,10 @@ def get_hcp_interaction_history(hcp_id: int, db: Session = Depends(get_db)):
                 "notes": i.notes
             })
 
-        return result
+        return {
+            "success": True,
+            "data": result
+        }
     except Exception as e:
 
         return {
@@ -205,7 +218,7 @@ def search_hcp(hcp_id: int = None,name: str = None, hospital: str = None, limit:
             hcp = query.filter(models.HCP.id == hcp_id).first()
 
             if not hcp:
-                return {"error": "HCP not found"}
+                return {"success": False, "error": "HCP not found"}
             
             results = [hcp]
             
@@ -225,16 +238,19 @@ def search_hcp(hcp_id: int = None,name: str = None, hospital: str = None, limit:
 
             results = query.all()
 
-        return [
-            {
-                "hcp_id": hcp.id,
-                "name": hcp.name,
-                "hospital": hcp.hospital,
-                "specialization": hcp.specialization,
-                "city": hcp.city
-            }
-            for hcp in results
-        ]
+        return {
+            "success": True,
+            "data": [
+                {
+                    "hcp_id": hcp.id,
+                    "name": hcp.name,
+                    "hospital": hcp.hospital,
+                    "specialization": hcp.specialization,
+                    "city": hcp.city
+                }
+                for hcp in results
+            ]
+        }
     except Exception as e:
 
         return {
