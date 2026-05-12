@@ -27,7 +27,7 @@ class Interaction(Base):
 
     hcp_id = Column(Integer, ForeignKey("hcps.id"))
 
-    Interaction_date = Column(Date)
+    interaction_date = Column(Date)
     topic = Column(String)
 
     follow_up_action = Column(String)
