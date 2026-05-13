@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from datetime import date
 from typing import Dict, Optional, Literal
 
@@ -35,3 +35,11 @@ class Step(BaseModel):
 
 class Plan(BaseModel):
     steps: list[Step]
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
