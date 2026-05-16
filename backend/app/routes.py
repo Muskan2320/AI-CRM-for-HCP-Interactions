@@ -5,9 +5,57 @@ from datetime import date
 from .database import get_db
 from . import models, schemas
 from app.langgraph.agent import graph
+from app.auth import hash_password
 
 router = APIRouter()
 
+@router.post("/signup")
+def signup(
+    data: schemas.UserCreate,
+    db: Session = Depends(get_db)
+):
+
+    try:
+
+        existing_user = db.query(models.User).filter(
+            models.User.email == data.email
+        ).first()
+
+        if existing_user:
+
+            return {
+                "success": False,
+                "error": "Email already registered"
+            }
+
+        hashed_password = hash_password(data.password)
+
+        user = models.User(
+            email=data.email,
+            hashed_password=hashed_password
+        )
+
+        db.add(user)
+
+        db.commit()
+
+        db.refresh(user)
+
+        return {
+            "success": True,
+            "message": "User created successfully",
+            "user_id": user.id
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        return {
+            "success": False,
+            "error": str(e)
+        }
+    
 @router.post("/chat")
 def chat(request: schemas.ChatRequest):
     try:
