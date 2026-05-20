@@ -5,7 +5,7 @@ from datetime import date
 from .database import get_db
 from . import models, schemas
 from app.langgraph.agent import graph
-from app.auth import hash_password
+from app.auth import hash_password, verify_password, create_access_token, verify_access_token
 
 router = APIRouter()
 
@@ -50,6 +50,39 @@ def signup(
     except Exception as e:
 
         db.rollback()
+
+        return {
+            "success": False,
+            "error": str(e)
+        }
+    
+@router.post("/login")
+def login(
+    data: schemas.UserLogin,
+    db: Session = Depends(get_db)
+):
+
+    try:
+
+        user = db.query(models.User).filter(
+            models.User.email == data.email
+        ).first()
+
+        if not user or not verify_password(data.password, user.hashed_password):
+
+            return {
+                "success": False,
+                "error": "Invalid email or password"
+            }
+
+        token = create_access_token({"user_id": user.id, "email": user.email})
+
+        return {
+            "success": True,
+            "access_token": token
+        }
+
+    except Exception as e:
 
         return {
             "success": False,
