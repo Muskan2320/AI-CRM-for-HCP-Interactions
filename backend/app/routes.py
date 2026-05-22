@@ -5,7 +5,7 @@ from datetime import date
 from .database import get_db
 from . import models, schemas
 from app.langgraph.agent import graph
-from app.auth import hash_password, verify_password, create_access_token, verify_access_token
+from app.auth import hash_password, verify_password, create_access_token, verify_access_token, get_current_user
 
 router = APIRouter()
 
@@ -90,7 +90,7 @@ def login(
         }
     
 @router.post("/chat")
-def chat(request: schemas.ChatRequest):
+def chat(request: schemas.ChatRequest, current_user: dict = Depends(get_current_user)):
     try:
         result = graph.invoke({"input": request.message})
 
