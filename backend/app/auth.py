@@ -1,4 +1,5 @@
 import os
+from typing import Dict
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
@@ -52,7 +53,7 @@ def verify_access_token(token: str):
     except JWTError:
         return None
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
     payload = verify_access_token(token)
 
     if not payload:
