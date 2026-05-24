@@ -91,6 +91,7 @@ def login(
     
 @router.post("/chat")
 def chat(request: schemas.ChatRequest, current_user: dict = Depends(get_current_user)):
+    print(f"Received chat request: {request.message}")
     try:
         result = graph.invoke({"input": request.message})
 
@@ -104,7 +105,6 @@ def chat(request: schemas.ChatRequest, current_user: dict = Depends(get_current_
             "success": False,
             "error": str(e)
         }
-
 
 @router.post("/log-interaction")
 def log_interaction(data: schemas.InteractionCreate, db: Session = Depends(get_db)):
