@@ -317,6 +317,16 @@ def execute_plan(state: AgentState):
 
         try:
             result = tool.invoke(data)
+            if result is None:
+                raise Exception(f"{tool_name} returned None")
+
+            if isinstance(result, dict):
+
+                if result.get("success") is False:
+                    raise Exception(result.get("error"))
+
+            if isinstance(result, list) and len(result) == 0:
+                raise Exception(f"{tool_name} returned empty result")
         except Exception as e:
             return {
                 "error": True,
@@ -334,7 +344,17 @@ def execute_plan(state: AgentState):
         if isinstance(result, list) and len(result) > 0:
             prev_result = result[0]
         elif isinstance(result, dict):
-            prev_result = result
+
+                data_result = result.get("data")
+
+                if isinstance(data_result, list) and len(data_result) > 0:
+                    prev_result = data_result[0]
+
+                elif isinstance(data_result, dict):
+                    prev_result = data_result
+
+                else:
+                    prev_result = data_result
 
     return {"output": last_result}
 
