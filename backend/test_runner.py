@@ -1,10 +1,15 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
+
+
 
 BASE_URL = "http://127.0.0.1:8000"
 
 
-TOKEN = "PASTE_YOUR_JWT_TOKEN_HERE"
+load_dotenv()
+TOKEN = os.getenv("JWT_TOKEN")
 
 
 headers = {
