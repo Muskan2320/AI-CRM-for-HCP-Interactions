@@ -42,7 +42,13 @@ TEST_PROMPTS = [
     "Show history of doctor that does not exist",
 
     # Date normalization
-    "Log interaction with Dr Raj from Fortis Hospital and schedule followup after 5 days"
+    "Log interaction with Dr Raj from Fortis Hospital and schedule followup after 5 days", 
+
+    "What is HCP id doctor sharma",
+
+    "Last interaction happened with which doctor",
+
+    "I want to get the interaction with interaction id 8"
 ]
 
 
