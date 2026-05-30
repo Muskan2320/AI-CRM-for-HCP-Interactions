@@ -1,153 +1,318 @@
 # 🚀 AI CRM for HCP Interactions
 
-This project is an AI-first CRM system designed for managing interactions with Healthcare Professionals (HCPs). It enables structured logging, intelligent updates, and AI-powered workflows using LangGraph and LLMs.
+An AI-powered CRM system for managing Healthcare Professional (HCP) interactions using FastAPI, LangGraph, LangChain, and Groq LLMs.
+
+The system enables users to manage HCP records, log interactions, track follow-ups, and interact with CRM data through natural language conversations powered by an AI agent.
 
 ---
 
-## 🎯 Problem Statement
+# 🎯 Problem Statement
 
-The goal is to build a CRM system that allows field representatives to efficiently log, track, and manage interactions with healthcare professionals. The system supports both structured data entry and AI-assisted workflows to improve productivity, data consistency, and follow-up tracking.
+Field representatives frequently interact with healthcare professionals and need a structured way to:
 
----
+* Maintain HCP records
+* Log discussions and meetings
+* Schedule and track follow-ups
+* Retrieve interaction history
+* Update CRM records efficiently
 
-## ⚙️ Features Implemented
-
-### 1. HCP Management
-- Dynamic creation of HCP records during interaction logging  
-- Search-first approach to avoid duplicate entries  
-- Auto-update of missing HCP fields (e.g., specialization, city)  
-
----
-
-### 2. Interaction Logging
-- Log interactions with structured data:
-  - Doctor name, hospital  
-  - Topic, notes  
-  - Follow-up details  
-- Smart handling of optional fields (stored only if provided)  
+This project combines traditional CRM functionality with AI-powered workflows, allowing users to perform CRM operations using natural language instead of manually navigating multiple screens.
 
 ---
 
-### 3. Follow-up Status Standardization
-- Controlled values:
-  - `pending`, `completed`, `cancelled`, `no_follow_up`  
-- Ensures clean filtering and tracking  
+# ⚙️ Features Implemented
+
+## 1. HCP Management
+
+* Dynamic HCP creation during interaction logging
+* Search-first workflow to avoid duplicate records
+* Automatic enrichment of missing HCP details
+* Search by:
+
+  * HCP ID
+  * Name
+  * Hospital
 
 ---
 
-### 4. Interaction Update (Edit Feature)
-- Update interaction fields selectively  
-- Returns structured response including updated fields  
-- Supports partial updates (only changed fields are modified)  
+## 2. Interaction Logging
+
+Supports structured interaction recording:
+
+* Doctor Name
+* Hospital
+* Specialization
+* City
+* Topic
+* Notes
+* Follow-up Action
+* Follow-up Date
+
+Features:
+
+* Dynamic HCP creation if not found
+* Reuses existing HCP records
+* Updates missing HCP metadata when available
 
 ---
 
-### 5. HCP Search API
-- Search by:
-  - HCP ID (highest priority)  
-  - Name  
-  - Hospital  
-- Default behavior: returns latest 10 HCPs  
-- Flexible filtering for real-world usage  
+## 3. Follow-up Tracking
+
+Supported statuses:
+
+* pending
+* completed
+* cancelled
+* no_follow_up
+
+Capabilities:
+
+* Retrieve pending follow-ups
+* Filter by target date
+* Sort by upcoming follow-up date
 
 ---
 
-### 6. Interaction & Follow-up Retrieval
-- Fetch interaction history by HCP ID  
-- Fetch pending follow-ups:
-  - Supports optional date filtering  
-  - Sorted by nearest follow-up date  
+## 4. Interaction Updates
+
+Supports selective updates:
+
+* Topic
+* Follow-up Action
+* Follow-up Date
+* Follow-up Status
+* Notes
+
+Features:
+
+* Partial updates
+* Tracks updated fields
+* Returns structured responses
 
 ---
 
-### 7. AI Integration (Groq + LangChain)
-- Integrated Groq LLM (`llama-3.3-70b-versatile`)  
-- End-to-end LLM pipeline working  
-- Structured prompt design for reliable outputs  
+## 5. Authentication & Security
+
+Implemented JWT-based authentication:
+
+* User Signup
+* User Login
+* Password Hashing
+* JWT Access Tokens
+* Protected Chat Endpoint
+
+Only authenticated users can access AI-powered CRM workflows.
 
 ---
 
-### 8. LangGraph Tools Layer
-- `SearchHCPTool` → fetch doctor details  
-- `LogInteractionTool` → log interaction into CRM  
-- `EditInteractionTool` → update existing interaction  
-- `GetPendingFollowupsTool` → fetch follow-ups  
-- `GetHCPInteractionHistoryTool` → fetch history  
+# 🤖 AI Agent Architecture
+
+The system uses a LangGraph-based planning and execution agent.
+
+Capabilities:
+
+* Multi-step planning
+* Tool orchestration
+* Tool chaining
+* Structured JSON plans
+* Dynamic execution
+* Retry-based recovery
+* Validation of tool responses
 
 ---
 
-### 9. LangGraph AI Agent (Core 🚀)
-- Built a **plan-based AI agent using LangGraph**
-- Capabilities:
-  - Multi-step reasoning (tool chaining)  
-  - Structured JSON planning  
-  - Dynamic tool execution  
-  - Ask-user fallback for missing inputs  
+## Example Workflow
 
-#### Example Workflow:
 User Query:
-Show interaction history of Dr Sharma
 
-Agent Plan:
-1. search_hcp → get hcp_id  
-2. get_hcp_interaction_history → fetch data  
+Show interaction history for Dr Himani from Apollo Hospital
 
----
+Generated Plan:
 
-### 10. Intelligent Input Handling
-- Extracts structured data from natural language  
-- Asks for missing required inputs only when needed  
-- Minimizes user friction  
+1. Search HCP
+2. Retrieve HCP Interaction History
+3. Return CRM results
 
 ---
 
-## 🧪 How to Run Locally
+# 🛠️ LangGraph Tools
 
-### 1. Clone Repository
-git clone <your-repo-url>
+### SearchHCPTool
+
+Search HCP records using:
+
+* HCP ID
+* Name
+* Hospital
+
+### LogInteractionTool
+
+Creates CRM interaction records.
+
+### EditInteractionTool
+
+Updates interaction details.
+
+### GetPendingFollowupsTool
+
+Retrieves pending follow-up activities.
+
+### GetHCPInteractionHistoryTool
+
+Retrieves interaction history for a healthcare professional.
+
+---
+
+# 🔄 Retry & Validation Layer
+
+The agent includes:
+
+* Tool parameter validation
+* Tool response validation
+* Retry-based recovery mechanism
+* Failure-aware replanning
+
+This improves reliability when LLM-generated plans contain invalid inputs or execution failures.
+
+---
+
+# 🧪 Regression Testing
+
+A regression testing suite is maintained using predefined CRM prompts.
+
+Tests cover:
+
+* HCP Search
+* Interaction Logging
+* Follow-up Retrieval
+* Interaction Updates
+* Tool Chaining
+* Retry Scenarios
+* Date Handling
+
+This helps detect regressions after code changes.
+
+---
+
+# 🏗️ Architecture
+
+User
+↓
+Chat API
+↓
+LangGraph Planner
+↓
+Tool Execution Layer
+↓
+FastAPI APIs
+↓
+Database
+
+---
+
+# 🧠 Key Highlights
+
+* AI-first CRM architecture
+* Multi-step reasoning with LangGraph
+* Dynamic tool orchestration
+* Retry and validation framework
+* JWT-based authentication
+* Structured CRM workflows
+* Natural language interaction layer
+* Production-style backend architecture
+
+---
+
+# 📌 Tech Stack
+
+Backend
+
+* FastAPI
+* SQLAlchemy
+* SQLite
+
+AI
+
+* LangGraph
+* LangChain
+* Groq
+* Llama 3.3 70B Versatile
+
+Authentication
+
+* JWT
+* Passlib
+* Bcrypt
+
+Database
+
+* SQLite
+* Easily extendable to PostgreSQL
+
+---
+
+# 🚀 How to Run
+
+## 1. Clone Repository
+
+git clone <repository-url>
+
 cd ai-crm-hcp
 
-### 2. Setup Backend
-cd backend
+---
+
+## 2. Create Virtual Environment
+
 python -m venv venv
+
 venv\Scripts\activate
+
+---
+
+## 3. Install Dependencies
+
 pip install -r requirements.txt
 
-### 3. Run FastAPI Server
+---
+
+## 4. Configure Environment Variables
+
+Create a .env file:
+
+GROQ_API_KEY=your_api_key
+
+SECRET_KEY=your_secret_key
+
+---
+
+## 5. Start Backend
+
 uvicorn app.main:app --reload
 
-### 4. Run AI Agent (Separate Terminal)
-python app/langgraph/agent.py
+---
+
+## 6. Access API Documentation
+
+http://127.0.0.1:8000/docs
 
 ---
 
-## 🚧 Current Limitations
-- Occasional inconsistency in LLM JSON output  
-- No retry/validation layer yet  
-- Stateless agent (no conversation memory)  
+# 🚧 Current Limitations
+
+* Date normalization can be improved for complex expressions
+* Clarification flow for ambiguous user requests is not implemented yet
+* Agent is currently stateless
+* Frontend interface is under development
 
 ---
 
-## 🚀 Next Steps
-- Add JSON validation + retry mechanism  
-- Improve prompt robustness for consistent multi-step reasoning  
-- Add conversation memory  
-- Improve response formatting (human-friendly output)  
-- Build frontend (React + Redux)  
-- Deploy as production-ready system  
+# 🔮 Future Enhancements
 
----
-
-## 🧠 Key Highlights
-- Designed a **production-style AI agent architecture**  
-- Implemented **multi-step reasoning with tool chaining**  
-- Built **end-to-end system: User → LLM → Tools → Database**  
-- Focused on **real-world CRM workflows and scalability**  
-
----
-
-## 📌 Tech Stack
-- Backend: FastAPI, SQLAlchemy  
-- AI/LLM: Groq, LangChain  
-- Agent Framework: LangGraph  
-- Database: SQLite (can be extended to Postgres)  
+* Conversational memory
+* Clarification-based workflows
+* React frontend
+* PostgreSQL migration
+* Role-based access control
+* Admin dashboard
+* Production deployment
+* Advanced analytics and reporting
