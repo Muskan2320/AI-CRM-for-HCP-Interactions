@@ -16,6 +16,7 @@ from app.langgraph.tools import (
     get_pending_followups_tool,
     get_hcp_interaction_history_tool
 )
+from app.logger import logger
 from app.schemas import Plan
 
 # ---------------- LLM ---------------- #
@@ -362,7 +363,12 @@ def execute_with_retry(state: AgentState, max_retries=2):
     user_input = state["input"]
     plan = state.get("plan", {})
 
+    logger.info(f"User Input: {user_input}")
+
     for attempt in range(max_retries + 1):
+        logger.info(f"Retry Attempt: {attempt + 1}")
+        logger.info(f"Executing Plan: {json.dumps(plan)}")
+
         print(f"Retry attempt {attempt+1}")
         print("Executing plan:", json.dumps(plan, indent=2))
 
@@ -373,16 +379,28 @@ def execute_with_retry(state: AgentState, max_retries=2):
 
         # SUCCESS
         if not result.get("error"):
+            logger.info(f"Execution Success: {result}")
+
             return result
 
         # FAILURE
         error_info = result
+        logger.error(
+            f"Attempt {attempt+1} Failed | "
+            f"Tool={error_info.get('failed_tool')} | "
+            f"Error={error_info['message']}"
+        )
 
         print(f"\n--- RETRY {attempt+1} ---")
         print("Error:", error_info["message"])
 
         # stop if max retries reached
         if attempt == max_retries:
+            logger.error(
+                f"Execution Failed After Retries | "
+                f"Last Error={error_info['message']}"
+            )
+
             return {
                 "output": f"Failed after {max_retries} retries",
                 "last_error": error_info["message"]
@@ -441,7 +459,14 @@ Return ONLY valid JSON:
 
         try:
             plan = json.loads(content)
+            logger.info(
+                f"Retry Plan Generated: {json.dumps(plan)}"
+            )
         except Exception as e:
+            logger.error(
+                f"Retry Plan Parsing Failed: {str(e)}"
+            )
+            
             return {"output": "Failed to fix plan got error: " + str(e)}
 
     return {"output": "Execution failed"}
