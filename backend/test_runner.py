@@ -3,13 +3,29 @@ import json
 import os
 from dotenv import load_dotenv
 
-
-
 BASE_URL = "http://127.0.0.1:8000"
 
-
 load_dotenv()
-TOKEN = os.getenv("JWT_TOKEN")
+
+EMAIL = os.getenv("TEST_EMAIL")
+PASSWORD = os.getenv("TEST_PASSWORD")
+
+
+def get_token():
+    response = requests.post(
+        f"{BASE_URL}/login",
+        json={
+            "email": EMAIL,
+            "password": PASSWORD
+        }
+    )
+
+    response.raise_for_status()
+
+    return response.json()["access_token"]
+
+
+TOKEN = get_token()
 
 
 headers = {
