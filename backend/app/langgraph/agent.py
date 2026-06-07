@@ -200,6 +200,7 @@ RULES
 - NO extra text outside JSON
 - NO extra tool calls
 - Use correct tool name EXACTLY
+- All dates passed to tools must be in YYYY-MM-DD format.
 - If required input missing → first get it using another tool
 - If hcp_id required for another tool:
   → first call search_hcp
