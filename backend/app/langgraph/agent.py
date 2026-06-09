@@ -301,12 +301,29 @@ def execute_plan(state: AgentState):
                 "message": f"Unknown tool: {tool_name}",
                 "plan": plan
             }
-
+        
         # Handle chaining ($prev)
         for k, v in data.items():
-            if isinstance(v, str) and "$prev." in v and prev_result:
-                key = v.split(".")[1]
-                data[k] = prev_result.get(key)
+
+            if isinstance(v, str) and v.startswith("$prev"):
+
+                if (
+                    v.startswith("$prev[0].")
+                    and isinstance(prev_result, list)
+                    and len(prev_result) > 0
+                    and isinstance(prev_result[0], dict)
+                ):
+
+                    key = v.split(".", 1)[1]
+                    data[k] = prev_result[0].get(key)
+
+                elif (
+                    v.startswith("$prev.")
+                    and isinstance(prev_result, dict)
+                ):
+
+                    key = v.split(".", 1)[1]
+                    data[k] = prev_result.get(key)
 
         allowed = ALLOWED_PARAMS.get(tool_name, set())
 
