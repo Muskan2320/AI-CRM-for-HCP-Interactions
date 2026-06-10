@@ -489,6 +489,34 @@ Return ONLY valid JSON:
 
     return {"output": "Execution failed"}
 
+# ------------Response generation function------------
+def generate_response(user_input, raw_result):
+
+    prompt = f"""
+You are an AI CRM assistant.
+
+User request:
+{user_input}
+
+Raw tool output:
+{json.dumps(raw_result, indent=2)}
+
+Instructions:
+- Answer ONLY what the user asked.
+- Do not expose unnecessary information.
+- Be concise and professional.
+- If the user asks for a single field, return only that field.
+- If the operation succeeded, confirm it naturally.
+- Answer ONLY based on provided text
+- If no data is available, clearly state that.
+"""
+
+    response = llm.invoke([
+        SystemMessage(content=prompt)
+    ])
+
+    return response.content
+
 # ---------------- GRAPH ---------------- #
 
 builder = StateGraph(AgentState)
