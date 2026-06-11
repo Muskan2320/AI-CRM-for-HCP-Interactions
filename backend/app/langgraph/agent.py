@@ -397,9 +397,19 @@ def execute_with_retry(state: AgentState, max_retries=2):
 
         # SUCCESS
         if not result.get("error"):
-            logger.info(f"Execution Success: {result}")
+            logger.info(f"Execution Success - Raw result: {result}")
+            raw_output = result["output"]
 
-            return result
+            formatted_response = generate_response(
+                user_input=user_input,
+                raw_result=raw_output
+            )
+            logger.info(f"Execution Success - LLM Response: {formatted_response}")
+
+            return {
+                "raw_output": raw_output,
+                "output": formatted_response
+            }
 
         # FAILURE
         error_info = result
