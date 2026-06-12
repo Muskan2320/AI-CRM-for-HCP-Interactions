@@ -1,3 +1,4 @@
+import time
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from datetime import date
@@ -93,11 +94,14 @@ def login(
 def chat(request: schemas.ChatRequest, current_user: dict = Depends(get_current_user)):
     print(f"Received chat request: {request.message}")
     try:
+        start = time.time()
         result = graph.invoke({"input": request.message})
+        execution_time = round(time.time() - start, 2)
 
         return {
             "success": True,
-            "response": result.get("output", "Sorry, I couldn't process your request.")
+            "response": result.get("output", "Sorry, I couldn't process your request."),
+            "execution_time_seconds": execution_time
         }
     except Exception as e:
 
