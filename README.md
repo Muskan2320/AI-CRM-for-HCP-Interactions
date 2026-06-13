@@ -299,9 +299,10 @@ http://127.0.0.1:8000/docs
 
 # 🚧 Current Limitations
 
-* Date normalization can be improved for complex expressions
+* Relative date expressions require more robust normalization
 * Clarification flow for ambiguous user requests is not implemented yet
 * Agent is currently stateless
+* Certain complex CRM queries may require additional specialized tools
 * Frontend interface is under development
 
 ---
@@ -313,6 +314,6 @@ http://127.0.0.1:8000/docs
 * React frontend
 * PostgreSQL migration
 * Role-based access control
-* Admin dashboard
+* Response synthesis layer for user-friendly outputs
 * Production deployment
 * Advanced analytics and reporting
