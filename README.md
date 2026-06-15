@@ -67,9 +67,30 @@ Supported statuses:
 
 Capabilities:
 
-* Retrieve pending follow-ups
-* Filter by target date
-* Sort by upcoming follow-up date
+* Multi-step planning
+* Tool orchestration
+* Tool chaining using intermediate outputs
+* Structured JSON plan generation
+* Dynamic tool execution
+* Retry-based recovery with replanning
+* Tool parameter validation
+* Tool response validation
+* Agent execution logging for debugging and traceability
+
+# 📋 Agent Observability
+
+The agent includes logging capabilities to improve debugging and traceability.
+
+Logged events include:
+
+* User requests
+* Generated execution plans
+* Retry attempts
+* Tool execution failures
+* Replanned workflows
+* Final execution outcomes
+
+This enables easier troubleshooting of LLM-generated workflows and supports iterative improvement of the agent.
 
 ---
 
@@ -184,11 +205,12 @@ Tests cover:
 
 * HCP Search
 * Interaction Logging
-* Follow-up Retrieval
+* Interaction History Retrieval
+* Pending Follow-up Retrieval
 * Interaction Updates
-* Tool Chaining
-* Retry Scenarios
-* Date Handling
+* Multi-step Tool Chaining
+* Retry and Recovery Scenarios
+* Authentication Validation
 
 This helps detect regressions after code changes.
 
@@ -215,7 +237,9 @@ Database
 * AI-first CRM architecture
 * Multi-step reasoning with LangGraph
 * Dynamic tool orchestration
-* Retry and validation framework
+* Retry-aware execution framework
+* Regression testing for agent workflows
+* Execution logging and observability
 * JWT-based authentication
 * Structured CRM workflows
 * Natural language interaction layer
