@@ -381,11 +381,11 @@ def execute_with_retry(state: AgentState, max_retries=2):
     user_input = state["input"]
     plan = state.get("plan", {})
 
-    logger.info(f"User Input: {user_input}")
+    logger.info(f"[INPUT] {user_input}")
 
     for attempt in range(max_retries + 1):
-        logger.info(f"Retry Attempt: {attempt + 1}")
-        logger.info(f"Executing Plan: {json.dumps(plan)}")
+        logger.info(f"[RETRY {attempt + 1}]")
+        logger.info(f"[PLAN] {json.dumps(plan)}")
 
         print(f"Retry attempt {attempt+1}")
         print("Executing plan:", json.dumps(plan, indent=2))
@@ -397,14 +397,15 @@ def execute_with_retry(state: AgentState, max_retries=2):
 
         # SUCCESS
         if not result.get("error"):
-            logger.info(f"Execution Success - Raw result: {result}")
+            logger.info(f"[RAW OUTPUT] {raw_output}")
+
             raw_output = result["output"]
 
             formatted_response = generate_response(
                 user_input=user_input,
                 raw_result=raw_output
             )
-            logger.info(f"Execution Success - LLM Response: {formatted_response}")
+            logger.info(f"[FINAL RESPONSE] {formatted_response}")
 
             return {
                 "raw_output": raw_output,
@@ -414,7 +415,8 @@ def execute_with_retry(state: AgentState, max_retries=2):
         # FAILURE
         error_info = result
         logger.error(
-            f"Attempt {attempt+1} Failed | "
+            f"[FAILED]"
+            f"Attempt={attempt+1} Failed | "
             f"Tool={error_info.get('failed_tool')} | "
             f"Error={error_info['message']}"
         )
