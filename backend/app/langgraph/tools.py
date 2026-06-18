@@ -1,9 +1,10 @@
 import requests
+import logging
 
 from langchain.tools import tool
 
 BASE_URL = "http://127.0.0.1:8000"
-
+logger = logging.getLogger(__name__)
 
 @tool
 def search_hcp_tool(
@@ -69,6 +70,11 @@ def log_interaction_tool(
 
     print("\n--- Logging Interaction with Data ---")
     print(payload)
+
+    logger.info(
+        "Logging interaction with payload: %s",
+        payload
+    )
 
     response = requests.post(
         f"{BASE_URL}/log-interaction",
