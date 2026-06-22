@@ -20,7 +20,36 @@ This project combines traditional CRM functionality with AI-powered workflows, a
 
 ---
 
-# ⚙️ Features Implemented
+# Agent Capabilities:
+
+* Multi-step planning
+* Tool orchestration
+* Tool chaining using intermediate outputs
+* Structured JSON plan generation
+* Dynamic tool execution
+* Retry-based recovery with replanning
+* Tool parameter validation
+* Tool response validatio
+* Agent execution logging for debugging and traceability
+
+# 📋 Agent Observability
+
+The agent includes logging capabilities to improve debugging and traceability.
+
+Logged events include:
+
+* User requests
+* Generated execution plans
+* Retry attempts
+* Tool execution failures
+* Replanned workflows
+* Final execution outcomes
+
+This enables easier troubleshooting of LLM-generated workflows and supports iterative improvement of the agent.
+
+---
+
+# ⚙️ Features Implemented - Tools and thier details:
 
 ## 1. HCP Management
 
@@ -64,35 +93,6 @@ Supported statuses:
 * completed
 * cancelled
 * no_follow_up
-
-Capabilities:
-
-* Multi-step planning
-* Tool orchestration
-* Tool chaining using intermediate outputs
-* Structured JSON plan generation
-* Dynamic tool execution
-* Retry-based recovery with replanning
-* Tool parameter validation
-* Tool response validation
-* Agent execution logging for debugging and traceability
-
-# 📋 Agent Observability
-
-The agent includes logging capabilities to improve debugging and traceability.
-
-Logged events include:
-
-* User requests
-* Generated execution plans
-* Retry attempts
-* Tool execution failures
-* Replanned workflows
-* Final execution outcomes
-
-This enables easier troubleshooting of LLM-generated workflows and supports iterative improvement of the agent.
-
----
 
 ## 4. Interaction Updates
 
