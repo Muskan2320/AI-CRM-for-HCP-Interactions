@@ -58,7 +58,7 @@ TEST_PROMPTS = [
     "Show history of doctor that does not exist",
 
     # Date normalization
-    "Log interaction with Dr Raj from Fortis Hospital and schedule followup after 5 days", 
+    "Log interaction with Dr Raj from Fortis Hospital and schedule followup after 5 days",
 
     "What is HCP id doctor sharma",
 
@@ -68,7 +68,12 @@ TEST_PROMPTS = [
 ]
 
 
+passed = 0
+failed = 0
+
+
 def run_test(prompt):
+    global passed, failed
 
     print("\n" + "=" * 80)
 
@@ -91,7 +96,14 @@ def run_test(prompt):
         print("\nRESPONSE:")
         print(json.dumps(response.json(), indent=2))
 
+        if response.status_code == 200:
+            passed += 1
+        else:
+            failed += 1
+
     except Exception as e:
+
+        failed += 1
 
         print("\nERROR:")
         print(str(e))
@@ -101,3 +113,11 @@ if __name__ == "__main__":
 
     for prompt in TEST_PROMPTS:
         run_test(prompt)
+
+    print("\n" + "=" * 80)
+    print("TEST SUMMARY")
+    print("=" * 80)
+    print(f"Total Tests : {len(TEST_PROMPTS)}")
+    print(f"Passed      : {passed}")
+    print(f"Failed      : {failed}")
+    print("=" * 80)
