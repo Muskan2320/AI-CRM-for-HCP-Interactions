@@ -97,3 +97,7 @@ Call /chat with invalid token
 
 ## Valid token
 Call /chat with valid JWT token
+
+# 9. Complex Query
+
+I want to know who is doctor with whom interaction happened yesterday.
