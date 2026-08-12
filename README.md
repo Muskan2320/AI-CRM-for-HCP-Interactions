@@ -219,15 +219,25 @@ This helps detect regressions after code changes.
 # 🏗️ Architecture
 
 User
+
 ↓
+
 Chat API
+
 ↓
+
 LangGraph Planner
+
 ↓
+
 Tool Execution Layer
+
 ↓
+
 FastAPI APIs
+
 ↓
+
 Database
 
 ---
